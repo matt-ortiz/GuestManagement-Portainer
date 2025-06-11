@@ -5,6 +5,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from app.extensions import db, login_manager, cache, mail
 from datetime import timedelta
+from sqlalchemy import text
 
 def create_app():
     app = Flask(__name__)
@@ -24,7 +25,7 @@ def create_app():
     # Set up logging
     logs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'logs')
     if not os.path.exists(logs_dir):
-        os.makedirs(logs_dir)
+        os.makedirs(logs_dir, exist_ok=True)
     
     # Create file handler
     file_handler = RotatingFileHandler(
@@ -56,13 +57,32 @@ def create_app():
         from app.routes import main, auth, ac
         app.register_blueprint(main)
         app.register_blueprint(auth)
-        app.register_blueprint(ac)  
+        app.register_blueprint(ac)
+        
+        # Ensure database directory exists and has proper permissions
+        db_uri = app.config['SQLALCHEMY_DATABASE_URI']
+        if db_uri.startswith('sqlite:///'):
+            db_path = db_uri.replace('sqlite:///', '')
+            db_dir = os.path.dirname(db_path)
+            if db_dir and not os.path.exists(db_dir):
+                os.makedirs(db_dir, mode=0o755, exist_ok=True)
+                app.logger.info(f"Created database directory: {db_dir}")
+        
+        # Check if database exists and has tables
         try:
-            db.engine.execute('SELECT 1 FROM admin')
+            # Use modern SQLAlchemy syntax
+            with db.engine.connect() as conn:
+                result = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='admin';"))
+                if result.fetchone() is None:
+                    raise Exception("Tables don't exist")
+            app.logger.info("Database tables already exist")
         except Exception as e:
-            app.logger.info("Initializing database tables...")
-            os.makedirs(os.path.dirname(app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', '')), exist_ok=True)
-            db.create_all()
-            app.logger.info("Database tables created successfully")
+            app.logger.info(f"Initializing database tables... ({str(e)})")
+            try:
+                db.create_all()
+                app.logger.info("Database tables created successfully")
+            except Exception as create_error:
+                app.logger.error(f"Failed to create database tables: {str(create_error)}")
+                raise
 
     return app
