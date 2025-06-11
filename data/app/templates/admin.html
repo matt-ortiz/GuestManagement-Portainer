@@ -1,0 +1,662 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Add Font Awesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+<!-- Add Admin CSS -->
+<link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+
+<div class="admin-wrapper">
+    <!-- Include Sidebar -->
+    {% with active_page = 'today' %}
+        {% include 'partials/sidebar.html' %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <div class="admin-content">
+        <div class="content-header">
+            <div class="header-title">
+                <h2>Today's Guests 
+                    <span class="guest-count" title="Total Guests">
+                        {{ total_count }}
+                    </span>
+                </h2>
+                <p class="text-muted">Manage visitor registrations</p>
+            </div>
+            <div class="header-actions">
+                <a href="{{ url_for('main.export') }}" class="btn btn-success">
+                    <i class="fas fa-file-export"></i> Export Today's Records
+                </a>
+            </div>
+        </div>
+
+        <div class="content-body">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Company</th>
+                                    <th>Host</th>
+                                    <th>Additional Guests</th>
+                                    <th>Time</th>
+                                    <th>Notify Host</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guestTableBody">
+                                {% if guests %}
+                                    {% for guest in guests %}
+                                    <tr id="guest-{{ guest.id }}">
+                                        <td>
+                                            <div class="guest-name">{{ guest.name }}</div>
+                                        </td>
+                                        <td>{{ guest.company }}</td>
+                                        <td>{{ guest.host }}</td>
+                                        <td>
+                                            {% if guest.additional_guests %}
+                                                {% set guests = guest.additional_guests|from_json %}
+                                                {% if guests %}
+                                                    {{ guests|join(', ') }}
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ guest.timestamp|eastern_time }}</td>
+                                        <td class="notification-buttons">
+                                            {% if host_preferences.get(guest.host) %}
+                                                <div class="notification-history">
+                                                    {% set notifications = guest.get_notifications() %}
+                                                    {% if notifications %}
+                                                        {% for notification in notifications %}
+                                                            <div class="notification-sent mb-1">
+                                                                <i class="{% if notification.type == 'slack' %}fab fa-slack{% else %}fas fa-envelope{% endif %} text-success"></i>
+                                                                <small class="text-muted">
+                                                                    {{ notification.type|title }} sent at 
+                                                                    {% set dt = notification.time|from_isoformat %}
+                                                                    {{ dt|eastern_time }}
+                                                                </small>
+                                                            </div>
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                    
+                                                    <button class="btn btn-outline-primary btn-sm notify-btn mt-2" 
+                                                            onclick="notifyHost('{{ guest.id }}', '{{ guest.host }}', event)"
+                                                            title="Send Notification">
+                                                        <i class="fas fa-bell"></i> Send Notification
+                                                    </button>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted small">No notification preferences found</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr id="no-guests-message">
+                                        <td colspan="6">
+                                            <div class="text-center py-5">
+                                                <i class="fas fa-calendar-day fa-3x text-muted mb-3"></i>
+                                                <h4 class="text-muted">No guests have checked in today</h4>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .admin-wrapper {
+        display: flex;
+        min-height: 100vh;
+        margin: -1.5rem;  /* Offset container padding */
+    }
+
+    .admin-sidebar {
+        width: 250px;
+        background: #2c3e50;
+        color: white;
+        padding: 1rem;
+    }
+
+    .sidebar-header {
+        padding: 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .sidebar-menu {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0;
+    }
+
+    .sidebar-menu li a {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        color: rgba(255,255,255,0.8);
+        text-decoration: none;
+        border-radius: 0.5rem;
+        margin: 0.25rem 0;
+        transition: all 0.3s ease;
+    }
+
+    .sidebar-menu li a:hover:not(.disabled) {
+        background: rgba(255,255,255,0.1);
+        color: white;
+    }
+
+    .sidebar-menu li.active a {
+        background: #3498db;
+        color: white;
+    }
+
+    .sidebar-menu li a i {
+        margin-right: 0.75rem;
+        width: 20px;
+        text-align: center;
+    }
+
+    .disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .admin-content {
+        flex: 1;
+        background: #f8f9fa;
+        padding: 2rem;
+    }
+
+    .content-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .header-title h2 {
+        margin: 0;
+        color: #2c3e50;
+    }
+
+    .card {
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: none;
+    }
+
+    .table {
+        margin: 0;
+    }
+
+    .table thead th {
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .guest-name {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+
+    .notification-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .notify-btn {
+        transition: all 0.3s ease;
+    }
+
+    .notify-btn i {
+        font-size: 0.875rem;
+    }
+
+    .notify-btn:disabled {
+        opacity: 0.7;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes highlight {
+        0% {
+            background-color: rgba(255, 243, 205, 0.8);
+        }
+        50% {
+            background-color: rgba(255, 243, 205, 0.8);
+        }
+        100% {
+            background-color: transparent;
+        }
+    }
+
+    .new-guest-animation {
+        animation: slideDown 0.5s ease-out, highlight 3s ease-out 0.5s;
+    }
+
+    tr {
+        transition: background-color 1s ease;
+    }
+
+    tr[style*="animation"] {
+        animation-duration: 5s !important;
+    }
+
+    .notification-history {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .notification-sent {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        background: #f8f9fa;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+
+    .notification-sent i {
+        font-size: 1rem;
+    }
+
+    .notification-sent i.fa-slack {
+        color: #4A154B;
+    }
+
+    .notification-sent i.fa-envelope {
+        color: #0D6EFD;
+    }
+
+    .notification-sent small {
+        color: #6c757d;
+    }
+
+    .notification-icons {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .notification-icons i {
+        font-size: 1rem;
+    }
+
+    .notification-icons i.text-muted {
+        opacity: 0.5;
+    }
+
+    .list-group-item.disabled {
+        cursor: not-allowed;
+    }
+
+    .list-group-item {
+        padding: 0.75rem 1rem;
+    }
+
+    .list-group-item small {
+        display: block;
+        margin-top: 0.25rem;
+    }
+
+    .notification-options {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .list-group-item {
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .notify-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+</style>
+
+<script>
+    // Initialize with a safe default value
+    let lastId = {% if guests and guests|length > 0 %}{{ guests[0].id }}{% else %}0{% endif %};
+    let hostPreferences = {{ host_preferences|tojson|safe }};
+    
+    // Add to your existing style section
+    const newStyles = `
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes highlight {
+            0% {
+                background-color: rgba(255, 243, 205, 0.8);
+            }
+            50% {
+                background-color: rgba(255, 243, 205, 0.8);
+            }
+            100% {
+                background-color: transparent;
+            }
+        }
+
+        .new-guest-animation {
+            animation: slideDown 0.5s ease-out, highlight 3s ease-out 0.5s;
+        }
+    `;
+
+    // Add styles to document
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = newStyles;
+    document.head.appendChild(styleSheet);
+
+    function notifyHost(guestId, hostName, event) {
+        const button = event.target.closest('button');
+        if (!button) {
+            console.error('No button found in event target');
+            return;
+        }
+        
+        button.disabled = true;
+        
+        fetch('/find-team-members', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                host_name: hostName,
+                guest_id: guestId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.matches) {
+                showTeamMemberSelector(data.matches, guestId, hostName, button);
+            } else {
+                showError(button, data.message || 'No matching team members found');
+            }
+            button.disabled = false;
+        })
+        .catch(error => {
+            console.error('Network error:', error);
+            button.disabled = false;
+            showError(button, 'Network error occurred');
+        });
+    }
+
+    function showTeamMemberSelector(matches, guestId, hostName, originalButton) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-labelledby', 'teamMemberSelectorTitle');
+        modal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="teamMemberSelectorTitle">Notify Host</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        ${matches.length > 1 ? '<p>Multiple team members found. Please select one:</p>' : ''}
+                        <div class="list-group">
+                            ${matches.map(match => {
+                                const memberPrefs = hostPreferences[match.name]?.preferences || [];
+                                
+                                return `
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <div class="fw-bold">${match.name}</div>
+                                                <small class="text-muted">${match.email}</small>
+                                            </div>
+                                        </div>
+                                        <div class="notification-options">
+                                            ${memberPrefs.includes('slack') ? `
+                                                <button class="btn btn-sm btn-outline-primary me-2" 
+                                                        onclick="sendNotification('slack', '${guestId}', '${hostName}', '${match.email}', this)">
+                                                    <i class="fab fa-slack"></i> Send Slack
+                                                </button>
+                                            ` : ''}
+                                            ${memberPrefs.includes('email') ? `
+                                                <button class="btn btn-sm btn-outline-info" 
+                                                        onclick="sendNotification('email', '${guestId}', '${hostName}', '${match.email}', this)">
+                                                    <i class="fas fa-envelope"></i> Send Email
+                                                </button>
+                                            ` : ''}
+                                            ${!memberPrefs.length ? `
+                                                <span class="text-muted">No notification methods enabled</span>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+        
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+        });
+    }
+
+    function sendNotification(method, guestId, hostName, email, button) {
+        button.disabled = true;
+        
+        fetch('/notify-host', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                method: method,
+                guest_id: guestId,
+                host_name: hostName,
+                selected_email: email
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const modalElement = button.closest('.modal');
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                modalInstance.hide();
+                
+                // Update the original button's parent with success message
+                const buttonContainer = document.querySelector(`#guest-${guestId} .notification-buttons`);
+                showSuccess(buttonContainer, method, data.notification_time);
+            } else {
+                showError(button, data.message);
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Network error:', error);
+            button.disabled = false;
+            showError(button, 'Network error occurred');
+        });
+    }
+
+    function showSuccess(buttonContainer, method, notificationTime) {
+        // Create success notification HTML
+        const notificationHtml = `
+            <div class="notification-sent mb-1">
+                <i class="${method === 'slack' ? 'fab fa-slack' : 'fas fa-envelope'} text-success"></i>
+                <small class="text-muted">
+                    ${method === 'slack' ? 'Slack' : 'Email'} sent at ${notificationTime}
+                </small>
+            </div>
+        `;
+        
+        // Find notification history container
+        let historyContainer = buttonContainer.querySelector('.notification-history');
+        if (!historyContainer) {
+            historyContainer = document.createElement('div');
+            historyContainer.className = 'notification-history';
+            buttonContainer.appendChild(historyContainer);
+        }
+        
+        // Remove existing button if present
+        const existingButton = historyContainer.querySelector('.notify-btn');
+        if (existingButton) {
+            existingButton.remove();
+        }
+        
+        // Add new notification to history
+        historyContainer.insertAdjacentHTML('beforeend', notificationHtml);
+        
+        // Add notification button at the bottom
+        const newButtonHtml = `
+            <button class="btn btn-outline-primary btn-sm notify-btn mt-2" 
+                    onclick="notifyHost('${buttonContainer.closest('tr').id.split('-')[1]}', '${buttonContainer.closest('tr').querySelector('td:nth-child(3)').textContent}', event)"
+                    title="Send Notification">
+                <i class="fas fa-bell"></i> Send Notification
+            </button>
+        `;
+        historyContainer.insertAdjacentHTML('beforeend', newButtonHtml);
+    }
+
+    function showError(button, message = null) {
+        // ... function code ...
+    }
+
+    function getNotificationButtons(guest) {
+        // ... function code ...
+    }
+
+    function checkNewGuests() {
+        const timestamp = new Date().getTime();
+        fetch(`/check-new-guests/${lastId}?_=${timestamp}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data) return;
+
+                // Update total count if changed
+                const countDisplay = document.querySelector('.guest-count');
+                if (countDisplay && data.total_count !== undefined) {
+                    countDisplay.textContent = data.total_count;
+                }
+
+                // Update host preferences with any new data
+                if (data.host_preferences) {
+                    hostPreferences = data.host_preferences;
+                }
+
+                if (!data.guests || !Array.isArray(data.guests)) return;
+
+                // Get table body
+                let tableBody = document.getElementById('guestTableBody');
+                if (!tableBody) return;
+
+                // Remove "no guests" message if needed
+                const noGuestsRow = document.getElementById('no-guests-message');
+                if (noGuestsRow && data.guests.length > 0) {
+                    noGuestsRow.remove();
+                }
+
+                // Sort and process new guests
+                const newGuests = data.guests.sort((a, b) => b.id - a.id);
+
+                newGuests.forEach(guest => {
+                    if (guest.id > lastId) {
+                        lastId = Math.max(lastId, guest.id);
+                        
+                        if (!document.getElementById(`guest-${guest.id}`)) {
+                            // Create new row
+                            const row = document.createElement('tr');
+                            row.id = `guest-${guest.id}`;
+                            row.className = 'new-guest-animation';
+                            
+                            // Format the guest data
+                            const additionalGuests = guest.additional_guests 
+                                ? (Array.isArray(guest.additional_guests) 
+                                    ? guest.additional_guests.join(', ') 
+                                    : String(guest.additional_guests))
+                                : '';
+                            
+                            row.innerHTML = `
+                                <td>
+                                    <div class="guest-name">${guest.name}</div>
+                                </td>
+                                <td>${guest.company || ''}</td>
+                                <td>${guest.host}</td>
+                                <td>${additionalGuests}</td>
+                                <td>${new Date(guest.timestamp).toLocaleTimeString('en-US', { 
+                                    hour: 'numeric', 
+                                    minute: '2-digit',
+                                    hour12: true 
+                                })}</td>
+                                <td class="notification-buttons">
+                                    ${hostPreferences[guest.host] ? `
+                                        <div class="notification-history">
+                                            <button class="btn btn-outline-primary btn-sm notify-btn mt-2" 
+                                                    onclick="notifyHost('${guest.id}', '${guest.host}', event)"
+                                                    title="Send Notification">
+                                                <i class="fas fa-bell"></i> Send Notification
+                                            </button>
+                                        </div>
+                                    ` : `
+                                        <span class="text-muted small">No notification preferences found</span>
+                                    `}
+                                </td>
+                            `;
+                            
+                            // Add to top of table
+                            tableBody.insertBefore(row, tableBody.firstChild);
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error checking for new guests:', error);
+            });
+    }
+
+    // Start checking for new guests every 5 seconds
+    const checkInterval = setInterval(checkNewGuests, 5000);
+
+    // Clean up interval when leaving page
+    window.addEventListener('beforeunload', () => {
+        clearInterval(checkInterval);
+    });
+</script>
+{% endblock %}

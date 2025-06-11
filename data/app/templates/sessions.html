@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-wrapper">
+    <!-- Include Sidebar -->
+    {% with active_page = 'sessions' %}
+        {% include 'partials/sidebar.html' %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <div class="admin-content">
+        <div class="content-header">
+            <div class="header-title">
+                <h2>Session Logs</h2>
+                <p class="text-muted">Monitor form sessions and diagnose issues</p>
+            </div>
+        </div>
+
+        <div class="content-body">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Created</th>
+                                    <th>Last Seen</th>
+                                    <th>Device Info</th>
+                                    <th>IP Address</th>
+                                    <th>Interactions</th>
+                                    <th>Attempts</th>
+                                    <th>Errors</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in sessions %}
+                                <tr>
+                                    <td>{{ session.created_at|eastern_time }}</td>
+                                    <td>{{ session.last_seen|eastern_time }}</td>
+                                    <td>
+                                        <small class="text-muted">{{ session.user_agent }}</small>
+                                    </td>
+                                    <td>{{ session.ip_address }}</td>
+                                    <td>{{ session.form_interactions }}</td>
+                                    <td>{{ session.submission_attempts }}</td>
+                                    <td>
+                                        {% if session.errors %}
+                                            <span class="text-danger">{{ session.errors }}</span>
+                                        {% else %}
+                                            <span class="text-success">No errors</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

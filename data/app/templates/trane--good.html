@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trane Tracer SC Controller</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .site-header {
+            background-color: #343a40;
+            color: white;
+            padding: 10px 0;
+            margin-bottom: 20px;
+        }
+        .back-link {
+            color: white;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+        .back-link:hover {
+            color: #17a2b8;
+        }
+        .back-link i {
+            margin-right: 5px;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: none;
+        }
+        .card-header {
+            font-weight: bold;
+        }
+        #loading {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: none;
+        }
+        .temp-display {
+            font-size: 3.5rem;
+            font-weight: 300;
+            text-align: center;
+            padding: 20px 0;
+            color: #0d6efd;
+        }
+        .key-parameter {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .key-parameter:hover {
+            background-color: #e9ecef;
+        }
+        .parameter-label {
+            font-weight: 500;
+            color: #495057;
+        }
+        .parameter-value {
+            font-weight: bold;
+            color: #0d6efd;
+            font-size: 1.1rem;
+        }
+        .system-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+        }
+        .status-badge {
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        .heating {
+            background-color: #ffdcdc;
+            color: #dc3545;
+        }
+        .cooling {
+            background-color: #dcf1ff;
+            color: #0d6efd;
+        }
+        .normal {
+            background-color: #d1ffd9;
+            color: #198754;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #664d03;
+        }
+        .tab-content {
+            padding: 20px 0;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .parameter-row {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .parameter-row:hover {
+            background-color: #f1f8ff;
+        }
+        .demand-indicator {
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .demand-bar {
+            height: 100%;
+            background-color: #0d6efd;
+            transition: width 0.5s ease;
+        }
+        .heating-bar {
+            background-color: #dc3545;
+        }
+        /* Loading spinner for individual parameters */
+        .param-loading {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background-color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            z-index: 10;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        .param-loading.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .spinner-border-sm {
+            width: 1.5rem;
+            height: 1.5rem;
+            border-width: 0.2em;
+        }
+        /* Page visibility indicator */
+        .visibility-indicator {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            background-color: rgba(0,0,0,0.1);
+            color: #666;
+            display: none;
+        }
+        .visibility-indicator.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="/admin" class="back-link">
+                    <i class="fas fa-arrow-left"></i> Back to Guest Management
+                </a>
+                <h4 class="m-0">NRSC Building Management</h4>
+                <div></div> <!-- Empty div for flex spacing -->
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="loading" class="alert alert-info">Loading...</div>
+        <div id="visibility-indicator" class="visibility-indicator">Page inactive - data updates paused</div>
+
+        <h1 class="text-center mb-4">Lobby AC Controller</h1>
+
+        <div class="row mb-3">
+            <div class="col-md-12 text-end">
+                <button id="refresh-btn" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                    </svg>
+                    Refresh Data
+                </button>
+                <span id="last-updated" class="text-muted ms-2 small"></span>
+            </div>
+        </div>
+
+        <!-- Key Information Section -->
+        <div class="row">
+            <!-- Indoor Temperature Card -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">Majority Room</div>
+                    <div class="card-body">
+                        <div class="text-center">
+                            <div class="temp-display" id="current-temp">--°F</div>
+                        </div>
+                        <div class="param-loading" id="temp-loading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="system-status">
+                            <span class="status-badge" id="system-mode">--</span>
+                            <span class="status-badge" id="diagnostic-status">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outdoor Conditions Card -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">Outdoor Conditions</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="text-center">
+                                    <div class="small text-muted">Temperature</div>
+                                    <div class="temp-display" id="outdoor-temp">--°F</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-center">
+                                    <div class="small text-muted">Humidity</div>
+                                    <div class="temp-display" id="outdoor-humidity">--%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="param-loading" id="outdoor-loading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Setpoints Card -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">Setpoints</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="key-parameter">
+                                    <div class="row">
+                                        <div class="col-6 parameter-label">Heat Setpoint:</div>
+                                        <div class="col-6 parameter-value" id="heat-setpoint">--°F</div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="heat-setpoint-input" step="0.5" min="60" max="80">
+                                            <button class="btn btn-outline-primary" type="button" id="heat-setpoint-btn">Set</button>
+                                        </div>
+                                    </div>
+                                    <div class="param-loading" id="heat-loading">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="key-parameter">
+                                    <div class="row">
+                                        <div class="col-6 parameter-label">Cool Setpoint:</div>
+                                        <div class="col-6 parameter-value" id="cool-setpoint">--°F</div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="cool-setpoint-input" step="0.5" min="60" max="80">
+                                            <button class="btn btn-outline-primary" type="button" id="cool-setpoint-btn">Set</button>
+                                        </div>
+                                    </div>
+                                    <div class="param-loading" id="cool-loading">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="key-parameter">
+                                    <div class="row">
+                                        <div class="col-6 parameter-label">Comfort Mode:</div>
+                                        <div class="col-6 parameter-value" id="comfort-mode">--</div>
+                                    </div>
+                                    <div class="param-loading" id="comfort-loading">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Demand Section -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">System Demand</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="key-parameter">
+                                    <div class="parameter-label">Heating Demand:</div>
+                                    <div class="parameter-value" id="heating-demand">0%</div>
+                                    <div class="demand-indicator">
+                                        <div class="demand-bar heating-bar" id="heating-bar" style="width: 0%"></div>
+                                    </div>
+                                    <div class="param-loading" id="heating-demand-loading">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="key-parameter">
+                                    <div class="parameter-label">Cooling Demand:</div>
+                                    <div class="parameter-value" id="cooling-demand">0%</div>
+                                    <div class="demand-indicator">
+                                        <div class="demand-bar" id="cooling-bar" style="width: 0%"></div>
+                                    </div>
+                                    <div class="param-loading" id="cooling-demand-loading">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs for Additional Information -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="status-tab" data-bs-toggle="tab" data-bs-target="#status" type="button" role="tab" aria-controls="status" aria-selected="true">Status Info</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="all-params-tab" data-bs-toggle="tab" data-bs-target="#all-params" type="button" role="tab" aria-controls="all-params" aria-selected="false">All Parameters</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="point-reader-tab" data-bs-toggle="tab" data-bs-target="#point-reader" type="button" role="tab" aria-controls="point-reader" aria-selected="false">Point Reader</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="raw-tab" data-bs-toggle="tab" data-bs-target="#raw" type="button" role="tab" aria-controls="raw" aria-selected="false">Raw Data</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="myTabContent">
+                            <!-- Status Info Tab -->
+                            <div class="tab-pane fade show active" id="status" role="tabpanel" aria-labelledby="status-tab">
+                                <div class="row" id="status-info">
+                                    <div class="col-md-6">
+                                        <div class="key-parameter">
+                                            <div class="row">
+                                                <div class="col-6 parameter-label">Communication Status:</div>
+                                                <div class="col-6 parameter-value" id="comm-status">--</div>
+                                            </div>
+                                            <div class="param-loading" id="comm-status-loading">
+                                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="key-parameter">
+                                            <div class="row">
+                                                <div class="col-6 parameter-label">Occupancy Status:</div>
+                                                <div class="col-6 parameter-value" id="occupancy-status">--</div>
+                                            </div>
+                                            <div class="param-loading" id="occupancy-status-loading">
+                                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- All Parameters Tab -->
+                            <div class="tab-pane fade" id="all-params" role="tabpanel" aria-labelledby="all-params-tab">
+                                <input type="text" id="search-input" class="form-control mb-3" placeholder="Search parameters...">
+                                <div id="parameters-container">
+                                    <p>Loading data...</p>
+                                </div>
+                            </div>
+
+                            <!-- Point Reader Tab -->
+                            <div class="tab-pane fade" id="point-reader" role="tabpanel" aria-labelledby="point-reader-tab">
+                                <div class="row mb-4">
+                                    <div class="col-md-12">
+                                        <div class="card">
+                                            <div class="card-header">Direct Point Access</div>
+                                            <div class="card-body">
+                                                <form id="point-reader-form" class="row g-3">
+                                                    <div class="col-md-4">
+                                                        <label for="point-type" class="form-label">Point Type</label>
+                                                        <select id="point-type" class="form-select">
+                                                            <option value="ai">Analog Input (ai)</option>
+                                                            <option value="ao">Analog Output (ao)</option>
+                                                            <option value="bi">Binary Input (bi)</option>
+                                                            <option value="bo">Binary Output (bo)</option>
+                                                            <option value="mi">Multistate Input (mi)</option>
+                                                            <option value="mo">Multistate Output (mo)</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label for="point-id" class="form-label">Point ID</label>
+                                                        <input type="number" class="form-control" id="point-id" min="1" value="1">
+                                                    </div>
+                                                    <div class="col-md-4 d-flex align-items-end">
+                                                        <button type="submit" class="btn btn-primary">Read Point</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="point-result" class="d-none">
+                                    <div class="card">
+                                        <div class="card-header">Point Value</div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h5 id="point-name">Point: <span></span></h5>
+                                                    <h3 id="point-value">Value: <span></span></h3>
+                                                    <p id="point-unit" class="text-muted">Unit: <span></span></p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h5>Raw Response:</h5>
+                                                    <pre id="point-raw" class="bg-light p-3 rounded"></pre>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Raw Data Tab -->
+                            <div class="tab-pane fade" id="raw" role="tabpanel" aria-labelledby="raw-tab">
+                                <pre id="raw-json">Loading...</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const loadingIndicator = document.getElementById('loading');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const parametersContainer = document.getElementById('parameters-container');
+        const rawJsonDisplay = document.getElementById('raw-json');
+        const searchInput = document.getElementById('search-input');
+        const lastUpdated = document.getElementById('last-updated');
+        const visibilityIndicator = document.getElementById('visibility-indicator');
+        
+        // Base URL for API calls
+        const API_BASE_URL = '/ac';
+        
+        // Store the data
+        let hvacData = null;
+        
+        // Tracking for individual parameter loading states
+        const paramLoadingElements = {
+            'Space Temperature Active': document.getElementById('temp-loading'),
+            'Outdoor Air Temperature': document.getElementById('outdoor-loading'),
+            'Outdoor Humidity': document.getElementById('outdoor-loading'),
+            'Reversing Valve': document.getElementById('temp-loading'), // System mode is part of temp display
+            'Diagnostic Present': document.getElementById('temp-loading'), // Diagnostic is part of temp display
+            'Occupied Heat Setpoint': document.getElementById('heat-loading'),
+            'Occupied Cool Setpoint': document.getElementById('cool-loading'),
+            'Comfort Mode': document.getElementById('comfort-loading'),
+            'PI Heating Demand': document.getElementById('heating-demand-loading'),
+            'PI Cooling Demand': document.getElementById('cooling-demand-loading'),
+            'Communication Status': document.getElementById('comm-status-loading'),
+            'Occupancy Status': document.getElementById('occupancy-status-loading')
+        };
+        
+        // Page visibility tracking
+        let isPageVisible = true;
+        let refreshTimer = null;
+        const ACTIVE_REFRESH_INTERVAL = 120000; //2 minutes when active
+        const INACTIVE_REFRESH_INTERVAL = 300000; // 5 minutes when inactive
+        
+        // Show loading indicator for all parameters
+        function showAllLoadingIndicators() {
+            Object.values(paramLoadingElements).forEach(element => {
+                if (element) {
+                    element.classList.add('active');
+                }
+            });
+        }
+        
+        // Hide loading indicator for all parameters
+        function hideAllLoadingIndicators() {
+            Object.values(paramLoadingElements).forEach(element => {
+                if (element) {
+                    element.classList.remove('active');
+                }
+            });
+        }
+        
+        // Show loading indicator for specific parameter
+        function showParameterLoading(paramName) {
+            const element = paramLoadingElements[paramName];
+            if (element) {
+                element.classList.add('active');
+            }
+        }
+        
+        // Hide loading indicator for specific parameter
+        function hideParameterLoading(paramName) {
+            const element = paramLoadingElements[paramName];
+            if (element) {
+                element.classList.remove('active');
+            }
+        }
+        
+        // Show global loading indicator
+        function showLoading() {
+            loadingIndicator.style.display = 'block';
+        }
+        
+        // Hide global loading indicator
+        function hideLoading() {
+            loadingIndicator.style.display = 'none';
+        }
+        
+        // Fetch HVAC data
+        function fetchData(showGlobalLoading = false) {
+            // If we're doing the initial load or manual refresh, show the full loading indicator
+            if (showGlobalLoading) {
+                showLoading();
+            } else {
+                // For automatic refreshes, just show individual parameter loaders
+                showAllLoadingIndicators();
+            }
+            
+            fetch(`${API_BASE_URL}/api/status`)
+                .then(response => response.json())
+                .then(data => {
+                    hvacData = data;
+                    displayData(data);
+                    updateLastUpdated();
+                    if (showGlobalLoading) {
+                        hideLoading();
+                    }
+                    hideAllLoadingIndicators();
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    parametersContainer.innerHTML = `<div class="alert alert-danger">Error loading data: ${error.message}</div>`;
+                    hideLoading();
+                    hideAllLoadingIndicators();
+                });
+        }
+        
+        // Set up the refresh timer based on page visibility
+        function setupRefreshTimer() {
+            clearInterval(refreshTimer);
+            const refreshInterval = isPageVisible ? ACTIVE_REFRESH_INTERVAL : INACTIVE_REFRESH_INTERVAL;
+            refreshTimer = setInterval(fetchData, refreshInterval);
+            
+            // Update the visibility indicator
+            if (!isPageVisible) {
+                visibilityIndicator.classList.add('visible');
+            } else {
+                visibilityIndicator.classList.remove('visible');
+            }
+        }
+        
+        // Update the last updated timestamp
+        function updateLastUpdated() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            lastUpdated.textContent = `Last updated: ${timeString}`;
+        }
+        
+        // Display the data in a user-friendly format
+        function displayData(data) {
+            // Display raw JSON
+            rawJsonDisplay.textContent = JSON.stringify(data, null, 2);
+            
+            // Update key information displays
+            updateKeyInformation(data);
+            
+            // Update all parameters table
+            updateAllParameters(data);
+        }
+        
+        // Update all parameters table
+        function updateAllParameters(data) {
+            if (data.error) {
+                parametersContainer.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            
+            let html = '<div class="row">';
+            html += '<div class="col-md-12"><table class="table table-hover">';
+            html += '<thead><tr><th>Parameter</th><th>Value</th><th>Details</th></tr></thead><tbody>';
+            
+            // Sort parameters alphabetically
+            const sortedParams = Object.keys(data).sort();
+            
+            sortedParams.forEach(paramName => {
+                const paramData = data[paramName];
+                if (paramName !== 'error') {
+                    html += `
+                        <tr class="parameter-row" data-name="${paramName.toLowerCase()}">
+                            <td><strong>${paramName}</strong></td>
+                            <td>${paramData.displayValue}</td>
+                            <td>
+                                <small class="text-muted">
+                                    Type: ${paramData.dataType || 'N/A'}<br>
+                                    Key: ${paramData.keyName || 'N/A'}<br>
+                                    Editable: ${paramData.editable ? 'Yes' : 'No'}
+                                </small>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            html += '</tbody></table></div>';
+            html += '</div>';
+            
+            parametersContainer.innerHTML = html;
+        }
+        
+        // Update the key information displays
+        function updateKeyInformation(data) {
+            // Current temperature
+            if (data['Space Temperature Active']) {
+                document.getElementById('current-temp').textContent = data['Space Temperature Active'].displayValue;
+                hideParameterLoading('Space Temperature Active');
+            }
+            
+            // Outdoor temperature
+            if (data['Outdoor Air Temperature']) {
+                document.getElementById('outdoor-temp').textContent = data['Outdoor Air Temperature'].displayValue;
+                hideParameterLoading('Outdoor Air Temperature');
+            }
+            
+            // Outdoor humidity
+            if (data['Outdoor Humidity']) {
+                document.getElementById('outdoor-humidity').textContent = data['Outdoor Humidity'].displayValue;
+                hideParameterLoading('Outdoor Humidity');
+            }
+            
+            // System mode (Reversing Valve)
+            if (data['Reversing Valve']) {
+                const modeElement = document.getElementById('system-mode');
+                const modeValue = data['Reversing Valve'].displayValue;
+                
+                modeElement.textContent = modeValue;
+                if (modeValue.includes('Heating')) {
+                    modeElement.className = 'status-badge heating';
+                } else if (modeValue.includes('Cooling')) {
+                    modeElement.className = 'status-badge cooling';
+                } else {
+                    modeElement.className = 'status-badge';
+                }
+                hideParameterLoading('Reversing Valve');
+            }
+            
+            // Diagnostic status
+            if (data['Diagnostic Present']) {
+                const diagnosticElement = document.getElementById('diagnostic-status');
+                const diagValue = data['Diagnostic Present'].displayValue;
+                
+                diagnosticElement.textContent = diagValue;
+                if (diagValue === 'Normal') {
+                    diagnosticElement.className = 'status-badge normal';
+                } else {
+                    diagnosticElement.className = 'status-badge warning';
+                }
+                hideParameterLoading('Diagnostic Present');
+            }
+            
+            // Setpoints
+            if (data['Occupied Heat Setpoint']) {
+                document.getElementById('heat-setpoint').textContent = data['Occupied Heat Setpoint'].displayValue;
+                // Also update the input field with the current value (without the °F)
+                const rawValue = parseFloat(data['Occupied Heat Setpoint'].value);
+                document.getElementById('heat-setpoint-input').value = rawValue;
+                hideParameterLoading('Occupied Heat Setpoint');
+            }
+            
+            if (data['Occupied Cool Setpoint']) {
+                document.getElementById('cool-setpoint').textContent = data['Occupied Cool Setpoint'].displayValue;
+                // Also update the input field with the current value (without the °F)
+                const rawValue = parseFloat(data['Occupied Cool Setpoint'].value);
+                document.getElementById('cool-setpoint-input').value = rawValue;
+                hideParameterLoading('Occupied Cool Setpoint');
+            }
+            
+            // Comfort mode
+            if (data['Comfort Mode']) {
+                document.getElementById('comfort-mode').textContent = data['Comfort Mode'].displayValue;
+                hideParameterLoading('Comfort Mode');
+            }
+            
+            // Heating demand
+            if (data['PI Heating Demand']) {
+                const demandValue = parseFloat(data['PI Heating Demand'].value) || 0;
+                document.getElementById('heating-demand').textContent = data['PI Heating Demand'].displayValue;
+                document.getElementById('heating-bar').style.width = `${demandValue}%`;
+                hideParameterLoading('PI Heating Demand');
+            }
+            
+            // Cooling demand
+            if (data['PI Cooling Demand']) {
+                const demandValue = parseFloat(data['PI Cooling Demand'].value) || 0;
+                document.getElementById('cooling-demand').textContent = data['PI Cooling Demand'].displayValue;
+                document.getElementById('cooling-bar').style.width = `${demandValue}%`;
+                hideParameterLoading('PI Cooling Demand');
+            }
+            
+            // Communication status
+            if (data['Communication Status']) {
+                const commElement = document.getElementById('comm-status');
+                let commValue = data['Communication Status'].displayValue;
+                
+                // Additional handling for numeric values
+                if (!isNaN(commValue)) {
+                    // Map numeric values to text based on our STATE_TEXT_MAP in Python
+                    const commStatusMap = [
+                        '---', 
+                        'Not Communicating', 
+                        'Unresolved', 
+                        'Communicating', 
+                        'Startup'
+                    ];
+                    
+                    const numValue = parseInt(commValue);
+                    if (numValue >= 0 && numValue < commStatusMap.length) {
+                        commValue = commStatusMap[numValue];
+                    }
+                }
+                
+                commElement.textContent = commValue;
+                
+                // Add appropriate styling
+                if (commValue === 'Communicating') {
+                    commElement.classList.add('text-success');
+                    commElement.classList.remove('text-danger', 'text-warning');
+                } else if (commValue === 'Not Communicating') {
+                    commElement.classList.add('text-danger');
+                    commElement.classList.remove('text-success', 'text-warning');
+                } else {
+                    commElement.classList.add('text-warning');
+                    commElement.classList.remove('text-success', 'text-danger');
+                }
+                
+                hideParameterLoading('Communication Status');
+            }
+            
+            // Occupancy status
+            if (data['Occupancy Status']) {
+                document.getElementById('occupancy-status').textContent = data['Occupancy Status'].displayValue;
+                hideParameterLoading('Occupancy Status');
+            }
+        }
+        
+        // Filter parameters based on search input
+        function filterParameters() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const rows = document.querySelectorAll('.parameter-row');
+            
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name');
+                if (name.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        // Handle page visibility changes
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                isPageVisible = false;
+            } else {
+                isPageVisible = true;
+                // Refresh data immediately when page becomes visible again
+                fetchData();
+            }
+            setupRefreshTimer();
+        }
+        
+        // Function to set a parameter value
+        function setParameterValue(keyName, value) {
+            showParameterLoading(keyName === 'aV6_wJ8BLYdd' ? 'Occupied Heat Setpoint' : 'Occupied Cool Setpoint');
+            
+            fetch(`${API_BASE_URL}/api/set`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    keyName: keyName,
+                    value: value
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(`Error: ${data.error}`);
+                } else {
+                    // Refresh data to show the updated value
+                    fetchData();
+                }
+            })
+            .catch(error => {
+                console.error('Error setting parameter:', error);
+                alert(`Error setting parameter: ${error.message}`);
+                hideParameterLoading(keyName === 'aV6_wJ8BLYdd' ? 'Occupied Heat Setpoint' : 'Occupied Cool Setpoint');
+            });
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData(true);  // Initial data load with global loading indicator
+            
+            refreshBtn.addEventListener('click', () => fetchData(true)); // Manual refresh with global loading
+            
+            searchInput.addEventListener('input', filterParameters);
+            
+            // Set up page visibility handling
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            
+            // Initial timer setup
+            setupRefreshTimer();
+            
+            // Heat setpoint button
+            document.getElementById('heat-setpoint-btn').addEventListener('click', () => {
+                const input = document.getElementById('heat-setpoint-input');
+                const value = input.value;
+                if (value) {
+                    setParameterValue('aV6_wJ8BLYdd', value);
+                }
+            });
+            
+            // Cool setpoint button
+            document.getElementById('cool-setpoint-btn').addEventListener('click', () => {
+                const input = document.getElementById('cool-setpoint-input');
+                const value = input.value;
+                if (value) {
+                    setParameterValue('aV6_wJ8BLYdc', value);
+                }
+            });
+            
+            // Point reader form
+            document.getElementById('point-reader-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const pointType = document.getElementById('point-type').value;
+                const pointId = document.getElementById('point-id').value;
+                
+                if (!pointType || !pointId) {
+                    alert('Please select a point type and enter a point ID');
+                    return;
+                }
+                
+                // Show loading
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+                
+                // Make the API request
+                fetch(`${API_BASE_URL}/api/point?type=${pointType}&id=${pointId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Reset button
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                        
+                        // Show the result
+                        const resultDiv = document.getElementById('point-result');
+                        resultDiv.classList.remove('d-none');
+                        
+                        if (data.error) {
+                            document.getElementById('point-name').innerHTML = `<span class="text-danger">Error</span>`;
+                            document.getElementById('point-value').innerHTML = `<span class="text-danger">${data.error}</span>`;
+                            document.getElementById('point-unit').innerHTML = '';
+                            document.getElementById('point-raw').textContent = JSON.stringify(data, null, 2);
+                        } else {
+                            document.getElementById('point-name').innerHTML = `Point: <span>${pointType}/${pointId}</span>`;
+                            document.getElementById('point-value').innerHTML = `Value: <span>${data.displayValue || data.value}</span>`;
+                            document.getElementById('point-unit').innerHTML = `Unit: <span>${data.unit || 'N/A'}</span>`;
+                            document.getElementById('point-raw').textContent = JSON.stringify(data, null, 2);
+                        }
+                    })
+                    .catch(error => {
+                        // Reset button
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                        
+                        // Show error
+                        console.error('Error reading point:', error);
+                        alert(`Error reading point: ${error.message}`);
+                    });
+            });
+        });
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

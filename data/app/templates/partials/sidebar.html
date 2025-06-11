@@ -1,0 +1,59 @@
+<nav class="admin-sidebar">
+    <div class="sidebar-header">
+        <h4>Admin Dashboard</h4>
+    </div>
+    <ul class="sidebar-menu">
+        <li class="{{ 'active' if active_page == 'today' }}">
+            <a href="{{ url_for('main.admin') }}">
+                <i class="fas fa-calendar-day"></i> Today's Guests
+            </a>
+        </li>
+        <li class="{{ 'active' if active_page == 'archive' }}">
+            <a href="{{ url_for('main.archive') }}">
+                <i class="fas fa-archive"></i> Archive
+            </a>
+        </li>
+        <li class="{{ 'active' if active_page == 'team' }}">
+            <a href="{{ url_for('main.team_notifications') }}">
+                <i class="fas fa-bell"></i> Team Notifications
+            </a>
+        </li>
+        <li {% if active_page == 'users' %}class="active"{% endif %}>
+            <a href="{{ url_for('main.users') }}">
+                <i class="fas fa-user-shield"></i>
+                <span>User Management</span>
+            </a>
+        </li>
+        <li class="{{ 'active' if active_page == 'settings' }}">
+            <a href="{{ url_for('main.settings') }}">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </li>
+    </ul>
+    
+    <!-- AC Controller Link -->
+    <div class="mt-4 mb-3">
+        <div class="sidebar-header">
+            <h5>Utilities</h5>
+        </div>
+        <ul class="sidebar-menu">
+            <li>
+                <a href="{{ url_for('ac.ac_home') }}" class="bg-info text-white rounded">
+                    <i class="fas fa-thermometer-half"></i>
+                    <span>Lobby AC Controller</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Logout at bottom -->
+    <ul class="sidebar-menu mt-auto logout-menu">
+        <li>
+            <a href="{{ url_for('auth.logout') }}" class="text-danger">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </li>
+    </ul>
+</nav> 

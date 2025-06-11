@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Welcome</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Prevent scrolling/bouncing on iPad */
+        body {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Prevent text zoom on iPad */
+        input, textarea, select, button {
+            font-size: 16px !important;
+            -webkit-appearance: none;
+            border-radius: 8px;
+        }
+
+        /* Make textarea more touch-friendly */
+        textarea {
+            min-height: 80px;
+            -webkit-appearance: none;
+        }
+
+        /* Improve button touch area */
+        button, input[type="submit"] {
+            min-height: 44px;  /* iOS recommended minimum */
+        }
+
+        /* Fix any potential zoom issues */
+        @viewport {
+            width: device-width;
+            zoom: 1.0;
+        }
+        
+        /* Smooth transitions */
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+        
+        /* Custom focus styles */
+        .focus-within-ring:focus-within {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+
+        /* Prevent iOS form zoom */
+        @media screen and (-webkit-min-device-pixel-ratio:0) { 
+            select,
+            textarea,
+            input {
+                font-size: 16px !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-lg p-8 w-full max-w-4xl" id="registrationForm">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Welcome</h1>
+                <p class="text-lg text-gray-600">Please sign in below</p>
+            </div>
+            
+            <form method="POST" id="guestForm" class="touch-manipulation">
+                {{ form.hidden_tag() }}
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="space-y-2">
+                        <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <i data-lucide="user-circle" class="w-5 h-5 mr-2 text-blue-500"></i>
+                            {{ form.name.label(class="") }}
+                        </label>
+                        {{ form.name(class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors touch-manipulation", placeholder="Enter your full name", autocomplete="off", autocorrect="off") }}
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <i data-lucide="building-2" class="w-5 h-5 mr-2 text-blue-500"></i>
+                            {{ form.company.label(class="") }}
+                        </label>
+                        {{ form.company(class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors touch-manipulation", placeholder="Enter your company name") }}
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <i data-lucide="user" class="w-5 h-5 mr-2 text-blue-500"></i>
+                            {{ form.host.label(class="") }}
+                        </label>
+                        {{ form.host(class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors touch-manipulation", placeholder="Who are you here to see?") }}
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <i data-lucide="users" class="w-5 h-5 mr-2 text-blue-500"></i>
+                            {{ form.additional_guests.label(class="") }}
+                        </label>
+                        {{ form.additional_guests(class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors touch-manipulation", rows=3, placeholder="Enter one name per line") }}
+                    </div>
+                </div>
+                
+                {{ form.submit(class="w-full bg-blue-500 text-white py-4 rounded-lg text-lg font-semibold hover:bg-blue-600 transition-colors focus:ring-4 focus:ring-blue-200 touch-manipulation", value="Sign In") }}
+            </form>
+        </div>
+
+        <div class="hidden bg-white rounded-2xl shadow-lg p-8 w-full max-w-4xl text-center" id="thankYouMessage">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="check" class="w-10 h-10 text-green-500"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">Thank You!</h2>
+            <p class="text-xl text-gray-600">Your registration has been recorded.</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Show success message function
+        function showSuccess() {
+            document.getElementById('registrationForm').classList.add('hidden');
+            document.getElementById('thankYouMessage').classList.remove('hidden');
+            
+            // Reset after 3 seconds
+            setTimeout(() => {
+                document.getElementById('registrationForm').classList.remove('hidden');
+                document.getElementById('thankYouMessage').classList.add('hidden');
+                // Clear the form
+                document.getElementById('guestForm').reset();
+            }, 3000);
+        }
+
+        // Form submission
+        document.getElementById('guestForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Disable the submit button to prevent double submission
+            const submitBtn = this.querySelector('input[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50');
+            }
+            
+            fetch('/', {
+                method: 'POST',
+                body: new FormData(this),
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text().then(text => {
+                    return text ? JSON.parse(text) : {}
+                });
+            })
+            .then(data => {
+                showSuccess();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('There was an error submitting the form. Please try again.');
+            })
+            .finally(() => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-50');
+                }
+            });
+        });
+
+        // Prevent double-tap zoom on iOS
+        document.addEventListener('touchstart', function(event) {
+            if (event.touches.length > 1) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>

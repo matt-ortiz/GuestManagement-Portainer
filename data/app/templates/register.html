@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Welcome</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Prevent scrolling/bouncing on iPad */
+        body {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Prevent text zoom on iPad */
+        input, textarea, select, button {
+            font-size: 16px !important;
+            -webkit-appearance: none;
+            border-radius: 8px;
+        }
+
+        /* Make textarea more touch-friendly */
+        textarea {
+            min-height: 80px;
+            -webkit-appearance: none;
+        }
+
+        /* Improve button touch area */
+        button, input[type="submit"] {
+            min-height: 44px;  /* iOS recommended minimum */
+        }
+
+        /* Fix any potential zoom issues */
+        @viewport {
+            width: device-width;
+            zoom: 1.0;
+        }
+        
+        /* Smooth transitions */
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+        
+        /* Custom focus styles */
+        .focus-within-ring:focus-within {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+
+        /* Prevent iOS form zoom */
+        @media screen and (-webkit-min-device-pixel-ratio:0) { 
+            select,
+            textarea,
+            input {
+                font-size: 16px !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="sessionModal" class="hidden fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-white/90 rounded-xl p-8 text-center max-w-sm mx-4 backdrop-blur-sm shadow-xl">
+            <i data-lucide="hand" class="w-12 h-12 mx-auto mb-4 text-blue-500"></i>
+            <h2 class="text-2xl font-medium text-gray-900 mb-2">Welcome</h2>
+            <p class="text-gray-600 mb-6">Click below to sign in</p>
+            <button id="reloadButton" 
+                    class="w-full bg-blue-500 text-white py-4 px-6 rounded-lg text-lg font-medium 
+                           hover:bg-blue-600 transition-colors focus:ring-4 focus:ring-blue-200">
+                Sign In
+            </button>
+        </div>
+    </div>
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-lg p-8 w-full max-w-4xl" id="registrationForm">
+            <div class="flex justify-center mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 153.138 48" 
+                     class="h-16 md:h-20 w-auto"
+                     style="-webkit-user-drag: none; user-select: none;">
+                    <path fill="#333" d="M0,48c.006-.28.018-.56.018-.84q0-22.878,0-45.756V.514H7.443l7.79,33.877.147-.021V.51h5.05c.013.2.036.4.036.593q0,23.24,0,46.477c0,.14-.01.28-.016.42H13.714a3.439,3.439,0,0,0-.045-.353Q10.081,32.026,6.49,16.405c-.4-1.743-.81-3.484-1.216-5.227l-.146.008v.673q0,17.713,0,35.426c0,.238.028.477.043.715Z"/>
+                    <path fill="#333" d="M27.669,48c.012-.279.035-.558.035-.837q0-22.929,0-45.857V.5c.225-.014.4-.036.572-.036,3.187,0,6.373-.008,9.559,0a11.205,11.205,0,0,1,4.575.834,6.8,6.8,0,0,1,4,5.527,13.407,13.407,0,0,1,.2,2.207c-.005,3.54.041,7.084-.1,10.619a6.122,6.122,0,0,1-3.752,5.752,2.6,2.6,0,0,0-.262.167,1.457,1.457,0,0,0,.215.115c2.605.8,3.875,2.525,3.929,5.507.081,4.46.029,8.923.033,13.385l0,3.421H41.263c.013-.239.039-.477.039-.716q0-5.854,0-11.71c0-1.361.021-2.723-.027-4.082a3.3,3.3,0,0,0-3.4-3.448c-1.441-.066-2.885-.043-4.329-.054a3.232,3.232,0,0,0-.461.07V48Zm5.407-33.687q0,4.17,0,8.342c0,.32-.014.6.447.59,1.561-.039,3.127,0,4.683-.1a3.093,3.093,0,0,0,2.954-2.886,12.829,12.829,0,0,0,.1-1.554q.015-4.5,0-9a13.749,13.749,0,0,0-.1-1.674,2.672,2.672,0,0,0-2.52-2.547c-1.591-.139-3.2-.07-4.8-.137-.589-.025-.791.115-.782.75C33.1,8.83,33.076,11.572,33.076,14.313Z"/>
+                    <path fill="#333" d="M58.706,48a2.211,2.211,0,0,0-.346-.2A6.69,6.69,0,0,1,53.8,42.194a13.412,13.412,0,0,1-.213-2.207c-.024-3.3-.014-6.606-.016-9.908a2.552,2.552,0,0,1,.033-.275h5.206v9.673c0,.24,0,.48.006.72.068,2.019.981,3.088,2.99,3.3a12.043,12.043,0,0,0,2.932-.078A2.73,2.73,0,0,0,67.129,40.6q.078-4.351-.005-8.706a3.827,3.827,0,0,0-1.436-2.937c-.91-.752-1.868-1.446-2.82-2.145-1.663-1.22-3.324-2.445-5.012-3.631a9.329,9.329,0,0,1-4.267-7.967c-.01-2.581-.048-5.167.087-7.742C53.91,3.028,56.611.343,61.067.132A26.123,26.123,0,0,1,66.453.36a6.565,6.565,0,0,1,5.8,6.391c.189,2.79.115,5.6.153,8.4.009.675,0,1.35,0,2.058H67.17v-.655q0-3.813,0-7.627c0-.36,0-.721-.025-1.08a2.807,2.807,0,0,0-2.629-2.857,13.788,13.788,0,0,0-2.929,0,2.583,2.583,0,0,0-2.518,2.535c-.116,2.574-.1,5.157-.062,7.736a4.38,4.38,0,0,0,2.027,3.512c2.184,1.6,4.386,3.164,6.564,4.767A26.884,26.884,0,0,1,69.83,25.36,8.2,8.2,0,0,1,72.5,31.455c.063,3.061.052,6.125,0,9.187a8.578,8.578,0,0,1-1.179,4.293,6.448,6.448,0,0,1-3.479,2.808c-.2.074-.4.171-.6.257Z"/>
+                    <path fill="#333" d="M84.571,48c-.325-.14-.651-.279-.976-.421a6.736,6.736,0,0,1-4.046-5.426,17.393,17.393,0,0,1-.236-2.864q-.025-15.069,0-30.139a16.473,16.473,0,0,1,.351-3.389A6.567,6.567,0,0,1,85.192.366,19.787,19.787,0,0,1,92.6.334a6.66,6.66,0,0,1,5.781,6.23,32.294,32.294,0,0,1,.151,3.352c.022,2.181.006,4.363.006,6.544V17.2H93.374c-.014-.231-.039-.461-.04-.692,0-2.461,0-4.923-.005-7.384a14.074,14.074,0,0,0-.08-1.437A2.653,2.653,0,0,0,90.9,5.112a14.385,14.385,0,0,0-3.644-.037c-1.645.206-2.439,1.27-2.566,3.051-.017.239-.013.48-.013.72q0,15.371,0,30.74a7.826,7.826,0,0,0,.1,1.252,2.6,2.6,0,0,0,2.42,2.5,16.914,16.914,0,0,0,3.882-.026,2.6,2.6,0,0,0,2.285-2.434,10.591,10.591,0,0,0,.1-1.434c.009-2.962,0-5.924,0-8.886V29.8h5.155a3.935,3.935,0,0,1,.055.479c-.012,3.482.008,6.965-.067,10.446a9.98,9.98,0,0,1-.525,2.813A6.352,6.352,0,0,1,93.9,47.769c-.187.064-.366.153-.548.231Z"/>
+                    <path fill="#ff3639" d="M110.378,27.143h.639q14.492,0,28.985-.008c.484,0,.766.057.694.639a13.145,13.145,0,0,0,.921,5.867c.414,1.228.818,2.46,1.182,3.7a4.844,4.844,0,0,1,.1,1.191,5.268,5.268,0,0,0,.937,2.853,9.178,9.178,0,0,1,1.1,2.433,1.387,1.387,0,0,1-1.009,1.882,6.521,6.521,0,0,1-4.688.2,4.231,4.231,0,0,0-.564-.2c-1.26-.259-1.6-1.126-1.625-2.287-.018-.955-.145-1.909-.242-2.861a1.8,1.8,0,0,0-.185-.567c-.313-.654-1.1-.758-1.409-.118a3.089,3.089,0,0,0-.388,1.81,19.14,19.14,0,0,0,1.13,3.388c.508,1.224.5,1.447-.63,2.122a2.879,2.879,0,0,1-1.223.438c-1.435.09-2.878.163-4.315.122a1.818,1.818,0,0,1-1.913-1.763c-.237-1.333-.236-1.267-1.621-1.24-1.575.032-3.155-.054-4.731-.126a1,1,0,0,1-1-1c-.132-1.165-.326-2.325-.418-3.493a4.016,4.016,0,0,0-.982-2.267.583.583,0,0,0-.548-.111,28.33,28.33,0,0,0-2.856,1.755,1.361,1.361,0,0,0,.036,2.329,1.995,1.995,0,0,1-1.137,3.631c-1.717,0-3.441.025-5.148-.118-1.138-.095-1.444-.519-1.517-1.65a11.926,11.926,0,0,1,2.483-8.189,25.187,25.187,0,0,0,1.879-2.757,1.667,1.667,0,0,0-.04-1.308,13.6,13.6,0,0,0-1.219-1.978A3.055,3.055,0,0,1,110.378,27.143Zm19,6.96c-.937.187-1.842.334-2.729.552-1.255.308-1.489.938-.712,1.966a2.687,2.687,0,0,1,.6,1.945,3.484,3.484,0,0,0,.005.957,3.877,3.877,0,0,0,.4,1.232.859.859,0,0,0,.729.353,1.367,1.367,0,0,0,.688-.643c.113-.2.036-.508.056-.766a20.844,20.844,0,0,1,.191-2.14C128.811,36.425,129.1,35.307,129.377,34.1Z"/>
+                    <path fill="#ff3639" d="M140.65,26.483H110.4a5.878,5.878,0,0,1,1.1-2.839c.984-1.408,2.018-2.782,3.039-4.165a2.392,2.392,0,0,1,.462-.47c1.207-.923,2.429-1.827,3.63-2.758a5.924,5.924,0,0,1,3.193-.867,4.5,4.5,0,0,0,3.227-1.462,4.385,4.385,0,0,1,1.673-1.129,15.654,15.654,0,0,1,5.216-1.282,3.476,3.476,0,0,0,2.469-1.07c.208-.217.433-.418.633-.641a2.87,2.87,0,0,1,2.782-.881c1.68.258,3.356.577,5.047.708,2.422.188,3.958-.619,4.945-2.861a1.322,1.322,0,0,0-.207-1.644c-.216.306-.433.573-.606.866a1.237,1.237,0,0,1-2.033.458,10.46,10.46,0,0,1-.869-.738c-.212-.183-.408-.388-.636-.548-.769-.535-.862-.722-.216-1.4a22.717,22.717,0,0,1,2.961-2.7,4.077,4.077,0,0,1,4.838.611,5.548,5.548,0,0,1,1.848,5.993A11,11,0,0,1,151,11.578c-.738.94-.723,1.051.093,1.89a.994.994,0,0,1,.153,1.406,7.047,7.047,0,0,1-1.37,1.313,6.071,6.071,0,0,0-1.5,1.514,3.447,3.447,0,0,1-1.382,1.071,8.5,8.5,0,0,1-2.007.586,2.521,2.521,0,0,0-1.807,1.262,6.786,6.786,0,0,1-2.02,2.179,1.986,1.986,0,0,0-.79,2.611C140.479,25.738,140.546,26.081,140.65,26.483Zm-17.581-5.736-.056-.16c-.65,0-1.3-.019-1.95.008a.533.533,0,0,1-.631-.46c-.182-.652-.415-1.29-.627-1.934a7.485,7.485,0,0,0-.715,1.82.643.643,0,0,1-.791.576c-.619-.04-1.243-.01-1.865-.01l-.026.168c.5.368.975.761,1.492,1.1a.666.666,0,0,1,.317.936c-.235.6-.4,1.225-.6,1.839a9.234,9.234,0,0,0,1.756-1.131.494.494,0,0,1,.729,0c.526.422,1.084.805,1.629,1.2a8.345,8.345,0,0,0-.483-1.985.586.586,0,0,1,.265-.8C122.047,21.54,122.552,21.136,123.069,20.747Zm9-.16-.066.164c.522.391,1.029.8,1.572,1.164a.574.574,0,0,1,.253.793c-.225.628-.408,1.271-.609,1.907a7.955,7.955,0,0,0,1.7-1.087.561.561,0,0,1,.832,0c.5.411,1.04.781,1.583,1.183.043-.121.074-.162.066-.193-.083-.307-.167-.614-.262-.917-.433-1.376-.434-1.375.693-2.218.285-.213.569-.43.853-.645l-.084-.146c-.6,0-1.2-.037-1.794.012a.676.676,0,0,1-.833-.605c-.149-.6-.37-1.182-.56-1.772l-.161.024c-.209.638-.441,1.27-.619,1.917a.5.5,0,0,1-.591.43C133.381,20.572,132.723,20.587,132.067,20.587Zm-4.45-2.351-.145-.015a15.5,15.5,0,0,0-.545,1.666c-.125.588-.422.761-.993.711s-1.128-.011-1.692-.011l-.04.165c.54.4,1.067.823,1.625,1.2a.5.5,0,0,1,.221.694c-.228.649-.417,1.311-.622,1.968a8.9,8.9,0,0,0,1.745-1.12.5.5,0,0,1,.732,0c.526.422,1.076.805,1.617,1.2a6.355,6.355,0,0,0-.322-1.545c-.349-1.161-.443-.783.5-1.522.389-.3.792-.594,1.189-.89l-.093-.152c-.62,0-1.241-.03-1.858.01a.622.622,0,0,1-.747-.559C128.03,19.429,127.81,18.836,127.617,18.236Z"/>
+                </svg>
+            </div>
+            
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Welcome</h1>
+                <p class="text-lg text-gray-600">Please sign in below</p>
+            </div>
+            
+            <form method="POST" id="guestForm" class="touch-manipulation">
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="space-y-2">
+                        <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <i data-lucide="user-circle" class="w-5 h-5 mr-2 text-blue-500"></i>
+                            {{ form.name.label(class="") }} *
+                        </label>
+                        {{ form.name(class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors touch-manipulation", placeholder="Enter your full name", autocomplete="off", autocorrect="off") }}
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <i data-lucide="building-2" class="w-5 h-5 mr-2 text-blue-500"></i>
+                            {{ form.company.label(class="") }}
+                        </label>
+                        {{ form.company(class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors touch-manipulation", placeholder="Enter your company name") }}
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <i data-lucide="user" class="w-5 h-5 mr-2 text-blue-500"></i>
+                            {{ form.host.label(class="") }} *
+                        </label>
+                        {{ form.host(class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors touch-manipulation", placeholder="Who are you here to see?") }}
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <i data-lucide="users" class="w-5 h-5 mr-2 text-blue-500"></i>
+                            {{ form.additional_guests.label(class="") }}
+                        </label>
+                        {{ form.additional_guests(class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors touch-manipulation", rows=3, placeholder="Enter one name per line") }}
+                    </div>
+                </div>
+                
+                {{ form.submit(class="w-full bg-blue-500 text-white py-4 rounded-lg text-lg font-semibold hover:bg-blue-600 transition-colors focus:ring-4 focus:ring-blue-200 touch-manipulation", value="Sign In") }}
+            </form>
+        </div>
+
+        <div class="hidden bg-white rounded-2xl shadow-lg p-8 w-full max-w-4xl text-center" id="thankYouMessage">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="check" class="w-10 h-10 text-green-500"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">Thank You!</h2>
+            <p class="text-xl text-gray-600">Your registration has been recorded.</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Add event listeners for the reload button
+        document.addEventListener('DOMContentLoaded', function() {
+            const reloadButton = document.getElementById('reloadButton');
+            if (reloadButton) {
+                // Add both click and touchend events for better iPad compatibility
+                reloadButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.location.href = window.location.pathname;
+                });
+                
+                reloadButton.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    window.location.href = window.location.pathname;
+                });
+            }
+        });
+
+        // Show success message function
+        function showSuccess() {
+            document.getElementById('registrationForm').classList.add('hidden');
+            document.getElementById('thankYouMessage').classList.remove('hidden');
+            
+            // Reset after 3 seconds and refresh the page
+            setTimeout(() => {
+                location.reload();  // Force a page refresh instead of just resetting the form
+            }, 3000);
+        }
+
+        // Form submission with session check
+        document.getElementById('guestForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Disable the submit button to prevent double submission
+            const submitBtn = this.querySelector('input[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50');
+            }
+
+            const formData = new FormData(this);
+            
+            fetch('/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text || 'Network response was not ok');
+                    });
+                }
+                return response.text().then(text => text ? JSON.parse(text) : {});
+            })
+            .then(() => {
+                showSuccess();
+            })
+            .catch(error => {
+                console.error('Form submission error:', error);
+                alert('There was an error submitting the form. Please try again.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-50');
+                }
+            });
+        });
+
+        // Prevent double-tap zoom on iOS
+        document.addEventListener('touchstart', function(event) {
+            if (event.touches.length > 1) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        // Check session status
+        function checkSession() {
+            fetch('/check-session')
+                .then(response => response.json())
+                .then(data => {
+                    // Only show the modal if the session is truly expired
+                    // and only after a very long time
+                    if (!data.valid && data.expires_in <= 0) {
+                        const modal = document.getElementById('sessionModal');
+                        modal.classList.remove('hidden');
+                    }
+                })
+                .catch(() => {
+                    // Don't show modal on network errors
+                    console.log("Session check failed, but continuing anyway");
+                });
+        }
+
+        // Simplified session status - only show modal when expired
+        function updateSessionStatus(expiresIn) {
+            // Only show the modal if the session is truly expired
+            const modal = document.getElementById('sessionModal');
+            if (expiresIn <= 0) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function showSessionWarning(message) {
+            // Only show in extreme cases
+            console.log("Session warning: " + message);
+        }
+
+        // Check session much less frequently (every 5 minutes instead of 30 seconds)
+        const sessionCheckInterval = setInterval(checkSession, 300000);
+
+        // Initial session check - but delay it to ensure page is fully loaded
+        setTimeout(checkSession, 2000);
+
+        // Simplified form interaction tracking - keep session alive while user is active
+        let interactionTimeout;
+        document.getElementById('guestForm').addEventListener('input', function() {
+            clearTimeout(interactionTimeout);
+            interactionTimeout = setTimeout(() => {
+                fetch('/update-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ type: 'input' })
+                }).catch(() => {});  // Silently fail interaction tracking
+            }, 1000);  // Debounce to prevent too many requests
+        });
+    </script>
+</body>
+</html>

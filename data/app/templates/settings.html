@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Add Font Awesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+<!-- Add Admin CSS -->
+<link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+
+<div class="admin-wrapper">
+    <!-- Include Sidebar -->
+    {% with active_page = 'settings' %}
+        {% include 'partials/sidebar.html' %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <div class="admin-content">
+        <div class="content-header">
+            <div class="header-title">
+                <h2>System Settings</h2>
+                <p class="text-muted">Configure system integrations</p>
+            </div>
+        </div>
+
+        <div class="content-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card settings-card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fab fa-slack"></i> Slack Integration</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('main.update_slack_settings') }}">
+                                <div class="mb-3">
+                                    <label for="slack_api_key" class="form-label">Slack API Key</label>
+                                    <input type="password" class="form-control" id="slack_api_key" 
+                                           name="slack_api_key" value="{{ slack_api_key if slack_api_key }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="slack_channel" class="form-label">Default Slack Channel</label>
+                                    <input type="text" class="form-control" id="slack_channel" 
+                                           name="slack_channel" value="{{ slack_channel if slack_channel }}">
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <button type="submit" class="btn btn-primary">Save Slack Settings</button>
+                                    <button type="button" class="btn btn-outline-info" onclick="testSlackConnection()">
+                                        <i class="fab fa-slack"></i> Test Connection
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <!-- Add this div for displaying the connection status -->
+                            <div id="slackConnectionStatus" class="mt-3" style="display: none;">
+                                <div class="alert d-flex align-items-center" role="alert">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status" id="slackTestSpinner">
+                                        <span class="visually-hidden">Testing...</span>
+                                    </div>
+                                    <div id="slackStatusMessage"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card settings-card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-envelope"></i> Email Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('main.update_email_settings') }}" id="emailSettingsForm" onsubmit="saveEmailSettings(event)">
+                                <div class="mb-3">
+                                    <label for="smtp_server" class="form-label">SMTP Server</label>
+                                    <input type="text" class="form-control" id="smtp_server" 
+                                           name="smtp_server" value="{{ smtp_server if smtp_server }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="smtp_port" class="form-label">SMTP Port</label>
+                                    <input type="number" class="form-control" id="smtp_port" 
+                                           name="smtp_port" value="{{ smtp_port if smtp_port }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="smtp_username" class="form-label">SMTP Username</label>
+                                    <input type="text" class="form-control" id="smtp_username" 
+                                           name="smtp_username" value="{{ smtp_username if smtp_username }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="smtp_password" class="form-label">SMTP Password</label>
+                                    <input type="password" class="form-control" id="smtp_password" 
+                                           name="smtp_password" value="{{ smtp_password if smtp_password }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="smtp_sender" class="form-label">Sender Email</label>
+                                    <input type="text" class="form-control" id="smtp_sender" 
+                                           name="smtp_sender" value="{{ smtp_sender if smtp_sender }}"
+                                           placeholder="NRSC Lobby <noreply@nrsc.org>">
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="smtp_use_tls" 
+                                               name="smtp_use_tls" value="true" 
+                                               {% if smtp_use_tls|default(true) %}checked{% endif %}>
+                                        <label class="form-check-label" for="smtp_use_tls">Use TLS</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="smtp_use_ssl" 
+                                               name="smtp_use_ssl" value="true" 
+                                               {% if smtp_use_ssl %}checked{% endif %}>
+                                        <label class="form-check-label" for="smtp_use_ssl">Use SSL</label>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <button type="submit" class="btn btn-primary">Save Email Settings</button>
+                                    <button type="button" class="btn btn-outline-info" onclick="sendTestEmail()">
+                                        <i class="fas fa-paper-plane"></i> Send Test Email
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add this at the bottom of the file, before the endblock -->
+<div class="modal fade" id="testEmailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Send Test Email</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="test_email" class="form-label">Test Email Address</label>
+                    <input type="email" class="form-control" id="test_email" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitTestEmail()">Send Test</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function sendTestEmail() {
+    const modal = new bootstrap.Modal(document.getElementById('testEmailModal'));
+    modal.show();
+}
+
+function saveEmailSettings(event) {
+    event.preventDefault();  // Prevent normal form submission
+    
+    const formData = new FormData(event.target);
+    fetch("{{ url_for('main.update_email_settings') }}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const alertHtml = `
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    Email settings saved successfully
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>`;
+            document.querySelector('.content-body').insertAdjacentHTML('afterbegin', alertHtml);
+        } else {
+            throw new Error(data.message || 'Failed to save settings');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Show error message
+        const alertHtml = `
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                ${error.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>`;
+        document.querySelector('.content-body').insertAdjacentHTML('afterbegin', alertHtml);
+    });
+}
+
+function submitTestEmail() {
+    const email = document.getElementById('test_email').value;
+    if (!email) {
+        alert('Please enter an email address');
+        return;
+    }
+
+    // Save settings first
+    const formData = new FormData(document.getElementById('emailSettingsForm'));
+    fetch("{{ url_for('main.update_email_settings') }}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Now send test email
+            return fetch("{{ url_for('main.test_email') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: email })
+            });
+        } else {
+            throw new Error('Failed to save settings');
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('testEmailModal')).hide();
+            // Show success message
+            const alertHtml = `
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    Test email sent successfully!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>`;
+            document.querySelector('.content-body').insertAdjacentHTML('afterbegin', alertHtml);
+        } else {
+            throw new Error(data.message || 'Failed to send test email');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        bootstrap.Modal.getInstance(document.getElementById('testEmailModal')).hide();
+        // Show error message
+        const alertHtml = `
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                ${error.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>`;
+        document.querySelector('.content-body').insertAdjacentHTML('afterbegin', alertHtml);
+    });
+}
+
+function testSlackConnection() {
+    const statusDiv = document.getElementById('slackConnectionStatus');
+    const spinner = document.getElementById('slackTestSpinner');
+    const messageDiv = document.getElementById('slackStatusMessage');
+    
+    // Show the status div with spinner
+    statusDiv.style.display = 'block';
+    statusDiv.querySelector('.alert').className = 'alert d-flex align-items-center';
+    spinner.style.display = 'inline-block';
+    messageDiv.innerHTML = 'Testing Slack connection...';
+    
+    fetch("{{ url_for('main.test_slack') }}")
+        .then(response => response.json())
+        .then(data => {
+            spinner.style.display = 'none';
+            
+            if (data.success) {
+                statusDiv.querySelector('.alert').className = 'alert alert-success d-flex align-items-center';
+                let detailsHtml = `
+                    <div>
+                        <strong>${data.message}</strong><br>
+                        <small class="text-muted">
+                            <i class="fas fa-check-circle"></i> Bot Name: ${data.details.user}<br>
+                            <i class="fas fa-building"></i> Workspace: ${data.details.team}<br>
+                            <i class="fas fa-robot"></i> Bot ID: ${data.details.bot_id}
+                        </small>
+                    </div>`;
+                messageDiv.innerHTML = detailsHtml;
+            } else {
+                statusDiv.querySelector('.alert').className = 'alert alert-danger d-flex align-items-center';
+                messageDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.message}`;
+                if (data.error_details) {
+                    messageDiv.innerHTML += `<br><small class="text-muted">${data.error_details}</small>`;
+                }
+            }
+        })
+        .catch(error => {
+            spinner.style.display = 'none';
+            statusDiv.querySelector('.alert').className = 'alert alert-danger d-flex align-items-center';
+            messageDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error testing connection: ${error.message}`;
+        });
+}
+</script>
+{% endblock %} 

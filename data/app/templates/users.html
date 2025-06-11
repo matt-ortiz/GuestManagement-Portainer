@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-wrapper">
+    <!-- Include Sidebar -->
+    {% with active_page = 'users' %}
+        {% include 'partials/sidebar.html' %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <div class="admin-content">
+        <div class="content-header">
+            <div class="header-title">
+                <h2>User Management</h2>
+                <p class="text-muted">Manage admin users</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="showAddUserModal()">
+                    <i class="fas fa-user-plus"></i> Add User
+                </button>
+            </div>
+        </div>
+
+        <div class="content-body">
+            <div class="card">
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.username }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary me-2" 
+                                                onclick="showUpdatePasswordModal({{ user.id }}, '{{ user.username }}')"
+                                                {% if user.id != current_user.id %}disabled="disabled"{% endif %}>
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                onclick="confirmDeleteUser({{ user.id }}, '{{ user.username }}')"
+                                                {% if user.id == current_user.id %}disabled="disabled"{% endif %}>
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('main.add_user') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" name="password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Update Password Modal -->
+<div class="modal fade" id="updatePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="updatePasswordForm" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" class="form-control" name="password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showAddUserModal() {
+        new bootstrap.Modal(document.getElementById('addUserModal')).show();
+    }
+
+    function showUpdatePasswordModal(userId, username) {
+        const modal = document.getElementById('updatePasswordModal');
+        modal.querySelector('.modal-title').textContent = `Update Password for ${username}`;
+        modal.querySelector('form').action = `/users/update/${userId}`;
+        new bootstrap.Modal(modal).show();
+    }
+
+    function confirmDeleteUser(userId, username) {
+        if (confirm(`Are you sure you want to delete user "${username}"?`)) {
+            window.location.href = `/users/delete/${userId}`;
+        }
+    }
+</script>
+{% endblock %} 
