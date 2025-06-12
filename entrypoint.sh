@@ -26,13 +26,21 @@ echo "Starting nginx..."
 nginx -g "daemon off;" &
 NGINX_PID=$!
 
-# Wait for nginx to start and verify it's running
+# Wait for nginx to start
 sleep 3
+
+# Check if nginx is still running (alternative to pgrep)
 if ! kill -0 $NGINX_PID 2>/dev/null; then
     echo "❌ ERROR: Nginx failed to start"
     exit 1
 fi
-echo "✅ Nginx started successfully (PID: $NGINX_PID)"
+
+# Double check by testing if nginx responds
+if ! curl -f -s http://localhost:80/ >/dev/null 2>&1; then
+    echo "⚠️ WARNING: Nginx started but not responding yet (will try later)"
+else
+    echo "✅ Nginx started and responding"
+fi
 
 echo "Starting Flask application with gunicorn..."
 
