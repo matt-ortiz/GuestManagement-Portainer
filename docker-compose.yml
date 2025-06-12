@@ -5,8 +5,6 @@ services:
     build: .
     container_name: guest-management
     restart: unless-stopped
-    ports:
-      - "${APP_PORT:-8080}:80"
     volumes:
       # Bind mount the entire app directory for easy editing
       - /etc/docker/config/guestmanagement/app:/app
@@ -23,7 +21,8 @@ services:
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
       - SLACK_CHANNEL_ID=${SLACK_CHANNEL_ID:-}
     networks:
-      - guest_network
+      br0:
+        ipv4_address: 10.5.0.46
     deploy:
       resources:
         limits:
@@ -38,5 +37,5 @@ services:
       - "maintainer=admin"
 
 networks:
-  guest_network:
-    driver: bridge
+  br0:
+    external: true
