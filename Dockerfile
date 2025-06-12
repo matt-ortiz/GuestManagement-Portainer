@@ -4,18 +4,13 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies with better error handling
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         nginx \
         curl \
-        procps \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Create application directories with proper permissions
-RUN mkdir -p /app/instance /app/logs && \
-    chmod 755 /app/instance /app/logs
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better layer caching
 COPY data/requirements.txt .
@@ -32,13 +27,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Copy application code
-COPY data/ .
-
-# Set proper permissions for app directory
-RUN chown -R www-data:www-data /app && \
-    chmod -R 755 /app && \
-    chmod -R 777 /app/instance /app/logs
+# Copy application code to a backup location first
+COPY data/ /app-template/
 
 # Create entrypoint and health check scripts
 COPY entrypoint.sh /entrypoint.sh
