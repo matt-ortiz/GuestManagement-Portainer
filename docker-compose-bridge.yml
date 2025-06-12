@@ -5,6 +5,8 @@ services:
     build: .
     container_name: guest-management
     restart: unless-stopped
+    ports:
+      - "80:80"  # This would make it accessible via the container's IP
     volumes:
       # Bind mount the entire app directory for easy editing
       - /etc/docker/config/guestmanagement/app:/app
@@ -21,8 +23,8 @@ services:
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
       - SLACK_CHANNEL_ID=${SLACK_CHANNEL_ID:-}
     networks:
-      guest_macvlan:
-        ipv4_address: 10.5.0.46
+      guest_bridge:
+        ipv4_address: 172.20.0.46
     deploy:
       resources:
         limits:
@@ -37,5 +39,5 @@ services:
       - "maintainer=admin"
 
 networks:
-  guest_macvlan:
+  guest_bridge:
     external: true
