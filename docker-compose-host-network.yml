@@ -5,6 +5,7 @@ services:
     build: .
     container_name: guest-management
     restart: unless-stopped
+    network_mode: "host"
     volumes:
       # Bind mount the entire app directory for easy editing
       - /etc/docker/config/guestmanagement/app:/app
@@ -20,9 +21,6 @@ services:
       - MAIL_PASSWORD=${MAIL_PASSWORD:-}
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
       - SLACK_CHANNEL_ID=${SLACK_CHANNEL_ID:-}
-    networks:
-      guest_static_network:
-        ipv4_address: 10.5.0.46
     deploy:
       resources:
         limits:
@@ -35,11 +33,3 @@ services:
       - "app=guest-management"
       - "environment=production"
       - "maintainer=admin"
-
-networks:
-  guest_static_network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 10.5.0.0/24
-          gateway: 10.5.0.1
