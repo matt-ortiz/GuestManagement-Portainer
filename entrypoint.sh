@@ -16,23 +16,27 @@ echo "Permissions set for data directories"
 # Test nginx config before starting
 echo "Testing nginx configuration..."
 nginx -t
+if [ $? -ne 0 ]; then
+    echo "❌ ERROR: Nginx configuration test failed"
+    exit 1
+fi
 
 # Start nginx in the background
 echo "Starting nginx..."
-nginx
+nginx -g "daemon off;" &
+NGINX_PID=$!
 
 # Wait for nginx to start and verify it's running
 sleep 3
-if ! pgrep nginx > /dev/null; then
+if ! kill -0 $NGINX_PID 2>/dev/null; then
     echo "❌ ERROR: Nginx failed to start"
     exit 1
 fi
-echo "✅ Nginx started successfully"
+echo "✅ Nginx started successfully (PID: $NGINX_PID)"
 
 echo "Starting Flask application with gunicorn..."
 
 # Start the Flask application with gunicorn
-# Remove --user/--group for now to debug permission issues
 exec /opt/venv/bin/gunicorn \
     --bind 0.0.0.0:8000 \
     --workers 3 \

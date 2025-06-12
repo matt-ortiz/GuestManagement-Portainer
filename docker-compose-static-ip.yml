@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  guest-management:
+    build: .
+    container_name: guest-management
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - guest_data:/app/instance
+      - guest_logs:/app/logs
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-CHANGE-ME-IN-PORTAINER}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/instance/guests.db}
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - FLASK_DEBUG=${FLASK_DEBUG:-0}
+      - MAIL_SERVER=${MAIL_SERVER:-}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USE_TLS=${MAIL_USE_TLS:-true}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      - SLACK_CHANNEL_ID=${SLACK_CHANNEL_ID:-}
+    networks:
+      guest_static_network:
+        ipv4_address: 172.20.0.10  # Static IP for container
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    labels:
+      - "app=guest-management"
+      - "environment=production"
+      - "maintainer=admin"
+
+networks:
+  guest_static_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+          gateway: 172.20.0.1
+
+volumes:
+  guest_data:
+    driver: local
+    labels:
+      - "backup=daily"
+      - "app=guest-management"
+      - "type=database"
+  guest_logs:
+    driver: local
+    labels:
+      - "backup=weekly" 
+      - "app=guest-management"
+      - "type=logs"
