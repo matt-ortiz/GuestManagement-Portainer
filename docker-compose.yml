@@ -8,16 +8,13 @@ services:
     ports:
       - "${APP_PORT:-8080}:80"
     volumes:
-      - guest_data:/app/instance
-      - guest_logs:/app/logs
+      # Mount the entire application for easy editing
+      - /etc/docker/config/guestmanagement/app:/app
     environment:
-      # These can be overridden in Portainer's environment variables section
       - SECRET_KEY=${SECRET_KEY:-CHANGE-ME-IN-PORTAINER}
       - DATABASE_URL=${DATABASE_URL:-sqlite:////app/instance/guests.db}
       - FLASK_ENV=${FLASK_ENV:-production}
       - FLASK_DEBUG=${FLASK_DEBUG:-0}
-      
-      # Optional configurations (can be set in Portainer)
       - MAIL_SERVER=${MAIL_SERVER:-}
       - MAIL_PORT=${MAIL_PORT:-587}
       - MAIL_USE_TLS=${MAIL_USE_TLS:-true}
@@ -27,7 +24,6 @@ services:
       - SLACK_CHANNEL_ID=${SLACK_CHANNEL_ID:-}
     networks:
       - guest_network
-    # Add resource limits (configurable in Portainer)
     deploy:
       resources:
         limits:
@@ -36,7 +32,6 @@ services:
         reservations:
           memory: 256M
           cpus: '0.25'
-    # Add labels for Portainer organization
     labels:
       - "app=guest-management"
       - "environment=production"
@@ -45,18 +40,3 @@ services:
 networks:
   guest_network:
     driver: bridge
-
-volumes:
-  guest_data:
-    driver: local
-    # You can add volume labels in Portainer for better organization
-    labels:
-      - "backup=daily"
-      - "app=guest-management"
-      - "type=database"
-  guest_logs:
-    driver: local
-    labels:
-      - "backup=weekly" 
-      - "app=guest-management"
-      - "type=logs"
