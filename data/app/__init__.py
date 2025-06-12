@@ -81,8 +81,30 @@ def create_app():
             try:
                 db.create_all()
                 app.logger.info("Database tables created successfully")
+                
+                # Create default admin user if no admin users exist
+                from app.models import Admin
+                if Admin.query.count() == 0:
+                    default_admin = Admin(username='admin')
+                    default_admin.set_password('admin123')  # Change this!
+                    db.session.add(default_admin)
+                    db.session.commit()
+                    app.logger.info("Created default admin user: admin/admin123")
+                    
             except Exception as create_error:
                 app.logger.error(f"Failed to create database tables: {str(create_error)}")
                 raise
+
+        # Check if we need to create default admin (for existing databases)
+        try:
+            from app.models import Admin
+            if Admin.query.count() == 0:
+                default_admin = Admin(username='itadmin')
+                default_admin.set_password('admin123')  # Change this!
+                db.session.add(default_admin)
+                db.session.commit()
+                app.logger.info("Created default admin user: admin/admin123")
+        except Exception as e:
+            app.logger.error(f"Error creating default admin: {str(e)}")
 
     return app
